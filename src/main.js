@@ -6,6 +6,10 @@ import router from './router'
 
 Vue.config.productionTip = false
 
+const appId = 'UjPTkcNRB9HL7458RuG6f8xk-gzGzoHsz'
+const appKey = 'ylcamdRnbp8FyA7CoDAL5BSz'
+AV.init({ appId, appKey })
+
 /* eslint-disable no-new */
 new Vue({
   el: '#app',
