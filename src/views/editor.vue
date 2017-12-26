@@ -10,16 +10,21 @@
         </li>
 
         <li :class="`px-font-14 px-padding-10`" v-show="isAddFolder">
-          <span class="fr px-font-10 color-c999 px-margin-t5" @click.stop="confirmAddFolder">确定</span>
+          <i class="iconfont icon-queding fr color-c999 px-margin-t5" @click.stop="confirmAddFolder"></i>
+          <i class="iconfont icon-guanbi fr color-c999 px-margin-5" @click.stop="cancelAddFolder"></i>
           <i class="iconfont icon-CombinedShape1 color-folder"></i>
-          <input type="text" maxlength="20" v-model.trim="newFolderName" class="new-folder-input">
+          <input type="text" maxlength="10" v-model.trim="newFolderName" class="new-folder-input">
         </li>
 
         <template v-for="(item, index) in path">
           <li :class="`px-font-16 px-padding-10 ${ savePath && savePath.id === item.id ? 'bg-f2' : '' }`" @click.stop="selectPath(item)">
-            <span
-              v-if="isEditFolder && savePath.id === item.id"
-              class="fr px-font-10 color-c999 px-margin-t5" @click.stop="confirmAddFolder">确定</span>
+            <!--<span-->
+              <!--v-if="isEditFolder && savePath.id === item.id"-->
+              <!--class="fr px-font-10 color-c999 px-margin-t5" @click.stop="confirmAddFolder">确定</span>-->
+            <template v-if="isEditFolder && savePath.id === item.id">
+              <i class="iconfont icon-queding fr color-c999 px-margin-t5" @click.stop="confirmAddFolder"></i>
+              <i class="iconfont icon-guanbi fr color-c999 px-margin-5" @click.stop="cancelAddFolder"></i>
+            </template>
             <i v-else @click.stop="toggle(index, item)"
               :class="`iconfont px-font-10 px-margin-t5 color-ccc fr ${showLeftMenu[index] ? 'icon-jiantou' : 'icon-Triangle'}`"></i>
             <i class="iconfont icon-CombinedShape1 color-folder"></i>
@@ -40,6 +45,7 @@
               v-for="arti in item.artical"
               @click="setArticalFill(item, arti)">
               <i :class="`iconfont icon-zhinan ${arti.status === 1 ? 'color-file' : 'color-green'}`"></i>
+              <i class="fr iconfont icon-yishanchu color-c999" @click="delArtical(arti)"></i>
               <span>{{ arti.artical_title }}</span>
             </li>
           </ul>
@@ -55,16 +61,15 @@
           <div class="fr px-line-50 text-center px-margin-r10" @click="publish(0)">
             <div class="btn px-btn btn-aaa line-normal btn-inverse cursor-p">保存到草稿</div>
           </div>
-          <!--<div class="fr px-line-50 text-center px-margin-r10">-->
-            <!--<div class="btn px-btn btn-aaa line-normal btn-inverse cursor-p">返回</div>-->
-          <!--</div>-->
+
           <div class="fr px-line-50 text-right w200 over-text px-margin-r10">
-            <!--<span>保存目录：</span>-->
             <span>{{ savePath.name }}</span>
-            <span>/</span>
-            <span class="color-info cursor-p" @click="editCurrFolder">编辑</span>
-            <span>/</span>
-            <span class="color-error cursor-p" @click="delFolder">删除</span>
+            <span v-show="!isEditFolder">
+              <span>/</span>
+              <span class="color-info cursor-p" @click="editCurrFolder">编辑</span>
+              <span>/</span>
+              <span class="color-error cursor-p" @click="delFolder">删除</span>
+            </span>
           </div>
         </template>
 
@@ -100,14 +105,27 @@
 
     data() {
       return {
+        // 文章标题
         articalTitle: '',
+
         frameUrl: '//localhost:8080/dist/my-editor/index.html',
+        editorInstance: false,
+
+        // 目录展开
         showLeftMenu: [],
-        savePath: null,
+
+        // 目录列表
         path: [],
+
         isAddFolder: false,
         isEditFolder: false,
-        newFolderName: '新建目录'
+        newFolderName: '新建目录',
+
+        // 选中的目录
+        savePath: null,
+
+        // 选中的文章
+        saveArtical: null
       }
     },
 
@@ -118,9 +136,7 @@
 
       if (!window.editorLoadCallback) {
         window.editorLoadCallback = (editorIns) => {
-          return function (markdown = '# hello world') {
-            editorIns.setMarkdown(markdown)
-          }
+          this.editorInstance = editorIns
         }
       }
     },
@@ -136,41 +152,35 @@
       },
 
       publish(status) {
+        // this.editorInstance
+        if (!this.editorInstance) {
+          alert('editor未初始化')
+          return
+        }
+
         DB.updateArtical({
           status,
           artical_title: this.articalTitle,
           artical_thumb: '',
-          artical_content: '123',
+          artical_content: this.editorInstance.getHTML(),
+          artical_markdown: this.editorInstance.getHTML(),
           artical_folder: this.savePath
         }).then(res=> {
           console.log(res)
         })
       },
 
-      frameValue(val, frame) {
-        if (!frame) {
-          console.log('请指定editor')
-          return
-        }
-
-        if (val) {
-          if (frame.Editor) {
-            frame.setMarkdown('#world')
-          } else {
-            frame.editFillContent = val
-          }
-        } else {
-          return frame.getHTML()
-        }
-      },
-
       setArticalFill(path, arti) {
-        localStorage.setItem('editFillContent', '12333')
-        this.articalTitle = arti ? arti.artical_title : ''
-
-        if (!this.savePath) {
-          this.selectPath(path)
+        // 异步初始化editor之前
+        if (!this.editorInstance) {
+          localStorage.setItem('editFillContent', arti.artical_markdown)
+        } else {
+          this.editorInstance.setMarkdown(arti.artical_markdown)
         }
+
+        this.saveArtical = arti
+        this.articalTitle = arti.artical_title || ''
+        this.selectPath(path)
       },
 
       toggle(index, item) {
@@ -185,7 +195,11 @@
       },
 
       selectPath(item) {
-        this.savePath = item
+        if (!this.isEditFolder) {
+          this.savePath = item
+        } else {
+          console.log('请先编辑完成')
+        }
       },
 
       confirmAddFolder() {
@@ -206,9 +220,15 @@
         })
       },
 
+      cancelAddFolder() {
+        this.isAddFolder = false
+        this.isEditFolder = false
+        this.newFolderName = '新建目录'
+      },
+
       addFolder() {
         if (!this.isEditFolder) {
-          this.isAddFolder = !this.isAddFolder
+          this.isAddFolder = true
         } else {
           alert('请先编辑完成')
         }
@@ -224,6 +244,10 @@
       },
 
       delFolder() {
+        // this.savePath.id
+      },
+
+      delArtical(arti) {
 
       }
     }
@@ -260,7 +284,7 @@
     }
 
     .new-folder-input {
-      width: 130px;
+      width: 110px;
       padding: 5px 10px;
       border: 1px #cdcdcd solid;
       border-radius: 2px;
@@ -285,6 +309,7 @@
         li {
           position: relative;
           padding-left: 35px;
+          padding-right: 10px;
 
           &:before {
             content: '';
