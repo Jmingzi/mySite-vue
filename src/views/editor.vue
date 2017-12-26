@@ -17,7 +17,10 @@
         </li>
 
         <template v-for="(item, index) in path">
-          <li :class="`px-font-16 px-padding-10 ${ savePath && savePath.id === item.id ? 'bg-f2' : '' }`" @click.stop="selectPath(item)">
+          <li
+            :class="`px-font-16 px-padding-10 ${ savePath && savePath.id === item.id ? 'bg-f2' : '' }`"
+            :key="item.id"
+            @click.stop="selectPath(item)">
             <!--<span-->
               <!--v-if="isEditFolder && savePath.id === item.id"-->
               <!--class="fr px-font-10 color-c999 px-margin-t5" @click.stop="confirmAddFolder">确定</span>-->
@@ -39,19 +42,23 @@
           </li>
 
           <ul v-show="showLeftMenu[index]">
-            <li
-              v-if="item.artical"
-              class="hover-bg"
-              v-for="arti in item.artical"
-              @click="setArticalFill(item, arti)">
-              <i :class="`iconfont icon-zhinan ${arti.status === 1 ? 'color-file' : 'color-green'}`"></i>
-              <i class="fr iconfont icon-yishanchu color-c999" @click="delArtical(arti)"></i>
-              <span>{{ arti.artical_title }}</span>
-            </li>
+            <template v-if="item.artical">
+              <li
+                class="hover-bg"
+                v-for="arti in item.artical"
+                :key="arti.id"
+                @click.stop="setArticalFill(item, arti)">
+                <i :class="`iconfont icon-zhinan ${arti.status === 0 ? 'color-file' : 'color-green'}`"></i>
+                <i class="fr iconfont icon-yishanchu color-c999" @click.stop="delArtical(arti, index)"></i>
+                <span>{{ arti.artical_title }}</span>
+              </li>
+              <li class="hover-bg" v-if="item.artical.length === 0">还没有文章</li>
+            </template>
           </ul>
         </template>
       </ul>
     </div>
+
     <div class="right-content position-a right-0 top-0 bottom-0">
       <div class="title bd-ccc-b cl px-font-14 px-height-50">
         <template v-if="savePath">
@@ -59,7 +66,7 @@
             <div class="btn px-btn btn-error line-normal cursor-p" @click="publish(1)">发布</div>
           </div>
           <div class="fr px-line-50 text-center px-margin-r10" @click="publish(0)">
-            <div class="btn px-btn btn-aaa line-normal btn-inverse cursor-p">保存到草稿</div>
+            <div v-show="saveArtical ? saveArtical.status !== 1 : true " class="btn px-btn btn-aaa line-normal btn-inverse cursor-p">保存到草稿</div>
           </div>
 
           <div class="fr px-line-50 text-right w200 over-text px-margin-r10">
@@ -108,7 +115,9 @@
         // 文章标题
         articalTitle: '',
 
-        frameUrl: '//localhost:8080/dist/my-editor/index.html',
+        frameUrl: location.port === 8080
+          ? '//localhost:8080/dist/my-editor/index.html'
+          : './my-editor/index.html',
         editorInstance: false,
 
         // 目录展开
@@ -129,16 +138,19 @@
       }
     },
 
+    created() {
+      if (!window.editorLoadCallback) {
+        window.editorLoadCallback = (editorIns) => {
+          console.log('editor load callback')
+          this.editorInstance = editorIns
+        }
+      }
+    },
+
     mounted() {
       DB.getList('Folder').then(res => {
         this.path = this.getAttribute(res)
       })
-
-      if (!window.editorLoadCallback) {
-        window.editorLoadCallback = (editorIns) => {
-          this.editorInstance = editorIns
-        }
-      }
     },
 
     methods: {
@@ -152,35 +164,66 @@
       },
 
       publish(status) {
-        // this.editorInstance
         if (!this.editorInstance) {
           alert('editor未初始化')
           return
         }
 
-        DB.updateArtical({
+        let data = {
           status,
           artical_title: this.articalTitle,
           artical_thumb: '',
           artical_content: this.editorInstance.getHTML(),
-          artical_markdown: this.editorInstance.getHTML(),
-          artical_folder: this.savePath
-        }).then(res=> {
-          console.log(res)
+          artical_markdown: this.editorInstance.getMarkdown(),
+          // artical 置空，否则循环引用
+          artical_folder: { ...this.savePath, artical: [] }
+        }
+
+        if (this.saveArtical) {
+          // console.log(this.saveArtical)
+          data.id = this.saveArtical.id
+        }
+
+        DB.updateArtical(data).then(res=> {
+          if (res.id) {
+            alert(`${data.id ? '编辑' : '新增'}成功`)
+            let afterData = { id: res.id, ...data }
+
+            if (data.id) {
+              // 编辑
+              let index = this.savePath.artical.findIndex(x => x.id === data.id)
+              this.$set(this.savePath.artical, index, afterData)
+            } else {
+              // 新增
+              if (!this.savePath.artical) {
+                this.$set(this.savePath, 'artical', [afterData])
+
+                // 展开
+                let index = this.path.findIndex(x => x.id === this.savePath.id)
+                this.toggle(index, this.savePath)
+              } else {
+                this.savePath.artical.unshift(afterData)
+              }
+            }
+          }
         })
       },
 
-      setArticalFill(path, arti) {
+      setArticalFill(path, arti = {}) {
         // 异步初始化editor之前
         if (!this.editorInstance) {
-          localStorage.setItem('editFillContent', arti.artical_markdown)
+          console.log('editor has no instance')
+          localStorage.setItem('editFillContent', arti.artical_markdown || '')
         } else {
-          this.editorInstance.setMarkdown(arti.artical_markdown)
+          console.log('editor instance is exist')
+          // this.editorInstance.setMarkdown(arti.artical_markdown || '')
+          // this.$refs.frame.contentWindow.Editor.setMarkdown(arti.artical_markdown || '')
+          this.$refs.frame.contentWindow.Editor.setValue(arti.artical_markdown || '')
         }
 
+        this.savePath = path
         this.saveArtical = arti
         this.articalTitle = arti.artical_title || ''
-        this.selectPath(path)
       },
 
       toggle(index, item) {
@@ -196,7 +239,8 @@
 
       selectPath(item) {
         if (!this.isEditFolder) {
-          this.savePath = item
+          this.setArticalFill(item)
+          this.saveArtical = null
         } else {
           console.log('请先编辑完成')
         }
@@ -216,7 +260,18 @@
           data.id = this.savePath.id
         }
         DB.updateFolder(data).then(res => {
-          console.log(res)
+          console.log(res.id)
+          if (res.id) {
+            if (this.isEditFolder) {
+              // let index = this.path.findIndex(item=> item.id === this.savePath.id)
+              // this.$set(this.path, index, { ...this.path[index], name: data.name })
+              this.savePath.name = data.name
+            } else {
+              this.path.unshift({ ...data, id: res.id })
+            }
+            this.cancelAddFolder()
+            alert('操作成功')
+          }
         })
       },
 
@@ -244,11 +299,37 @@
       },
 
       delFolder() {
+        let index = this.path.findIndex(x => x.id === this.savePath.id)
+
+        if (this.showLeftMenu[index] === undefined) {
+          alert('请先查看该目录下是否存在文章')
+          return
+        }
+
+        if (this.savePath.artical && this.savePath.artical.length > 0) {
+          alert('请先删除该目录下的文章')
+          return
+        }
+
         // this.savePath.id
+        DB.updateFolder({ ...this.savePath, del: true }).then(res=> {
+          if (res.id) {
+            this.path.splice(index, 1)
+            this.showLeftMenu[index] = false
+          }
+        })
       },
 
-      delArtical(arti) {
+      delArtical(arti, pathIndex) {
+        DB.updateArtical({ ...arti, status: -1 }).then(res=> {
+          if (res.id) {
+            let index = this.path[pathIndex].artical.findIndex(x => x.id === arti.id)
+            this.path[pathIndex].artical.splice(index, 1)
 
+            this.$set(this.path, pathIndex, this.path[pathIndex])
+            alert('删除成功')
+          }
+        })
       }
     }
   }
@@ -330,7 +411,7 @@
     .title {
       input {
         border: none;
-        width: 50%;
+        width: 45%;
         &:focus {
           outline: none;
         }

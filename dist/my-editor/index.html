@@ -18,7 +18,7 @@
   <script src="../editor.md/editormd.js"></script>
 
   <script>
-    console.log(location.search)
+    var local = localStorage.getItem('editFillContent')
 
     $(function () {
       // $.get('../editor.md/examples/test.md', function(md){
@@ -30,7 +30,7 @@
           // theme : "dark",
           // previewTheme : "dark",
           // editorTheme : "pastel-on-dark",
-          markdown : localStorage.getItem('editFillContent'),
+          markdown : local ? local : '',
           codeFold : true,
           //syncScrolling : false,
           saveHTMLToTextarea : true,    // 保存 HTML 到 Textarea
@@ -55,6 +55,7 @@
           imageUploadURL : "./php/upload.php",
           placeholder: '世界在你手上...开始吧',
           onload : function() {
+            console.log('editor load before callback')
             window.parent.editorLoadCallback(this)
             // console.log('onload', this)
             //this.fullscreen();
