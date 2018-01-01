@@ -51,7 +51,7 @@
           "<label>" + imageLang.url + "</label>" +
           "<input type=\"text\" data-url />" + (function(){
             return (settings.imageUpload) ? "<div class=\"" + classPrefix + "file-input\">" +
-              "<input type=\"file\" name=\"" + classPrefix + "image-file\" id='av-file-upload' accept=\"image/*\" />" +
+              "<input type=\"file\" name=\"" + classPrefix + "image-file\" accept=\"image/*\" />" +
               "<input type=\"submit\" value=\"" + imageLang.uploadButton + "\" />" +
               "</div>" : "";
           })() +
@@ -147,52 +147,33 @@
 
           loading(true);
 
-          var fileUploadControl = $('#av-file-upload')[0];
-          if (fileUploadControl.files.length > 0) {
-            var localFile = fileUploadControl.files[0];
-            console.log(localFile)
+          var submitHandler = function() {
 
-            var file = new AV.File(fileName, localFile);
-            file.save().then(function(file) {
-              // 文件保存成功
-              // console.log(file.url());
-              dialog.find("[data-url]").val(file.url())
-              loading(false)
-            }, function(error) {
-              // 异常处理
-              // console.error(error);
-              alert(error.message)
-              loading(false)
-            });
-          }
+            var uploadIframe = document.getElementById(iframeName);
 
-          // var submitHandler = function() {
-          //
-          //   var uploadIframe = document.getElementById(iframeName);
-          //
-          //   uploadIframe.onload = function() {
-          //
-          //     loading(false);
-          //
-          //     var body = (uploadIframe.contentWindow ? uploadIframe.contentWindow : uploadIframe.contentDocument).document.body;
-          //     var json = (body.innerText) ? body.innerText : ( (body.textContent) ? body.textContent : null);
-          //
-          //     json = (typeof JSON.parse !== "undefined") ? JSON.parse(json) : eval("(" + json + ")");
-          //
-          //     if (json.success === 1)
-          //     {
-          //       dialog.find("[data-url]").val(json.url);
-          //     }
-          //     else
-          //     {
-          //       alert(json.message);
-          //     }
-          //
-          //     return false;
-          //   };
-          // };
-          //
-          // dialog.find("[type=\"submit\"]").bind("click", submitHandler).trigger("click");
+            uploadIframe.onload = function() {
+
+              loading(false);
+
+              var body = (uploadIframe.contentWindow ? uploadIframe.contentWindow : uploadIframe.contentDocument).document.body;
+              var json = (body.innerText) ? body.innerText : ( (body.textContent) ? body.textContent : null);
+
+              json = (typeof JSON.parse !== "undefined") ? JSON.parse(json) : eval("(" + json + ")");
+
+              if (json.success === 1)
+              {
+                dialog.find("[data-url]").val(json.url);
+              }
+              else
+              {
+                alert(json.message);
+              }
+
+              return false;
+            };
+          };
+
+          dialog.find("[type=\"submit\"]").bind("click", submitHandler).trigger("click");
         });
       }
 

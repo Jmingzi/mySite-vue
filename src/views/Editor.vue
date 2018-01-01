@@ -1,12 +1,12 @@
 <template>
   <div class="wrap">
-    <div class="left-menu position-a left-0 top-0 bottom-0 bd-ccc-r">
+    <div class="w200 left-menu position-a left-0 top-0 px-bottom-50 bd-ccc-r">
       <ul class="menu-top">
-        <li
-          class="px-font-16 px-line-50 px-height-50 bd-ccc-b hover-bg text-center color-folder"
-          @click.stop="addFolder">
-          <i class="iconfont icon-add"></i>
-          <span>新建目录</span>
+        <li class="position-r px-font-16 px-line-50 px-height-50 bd-ccc-b color-folder">
+          <div class="width-100 height-100 hover-bg text-center" @click.stop="addFolder">
+            <i class="iconfont icon-add"></i>
+            <span>新建目录</span>
+          </div>
         </li>
 
         <li :class="`px-font-14 px-padding-10`" v-show="isAddFolder">
@@ -49,7 +49,7 @@
                 :key="arti.id"
                 @click.stop="setArticalFill(item, arti)">
                 <i :class="`iconfont icon-zhinan ${arti.status === 0 ? 'color-file' : 'color-green'}`"></i>
-                <i class="fr iconfont icon-yishanchu color-c999" @click.stop="delArtical(arti, index)"></i>
+                <i v-if="isAdmin" class="fr iconfont icon-yishanchu color-c999" @click.stop="delArtical(arti, index)"></i>
                 <span>{{ arti.artical_title }}</span>
               </li>
               <li class="hover-bg" v-if="item.artical.length === 0">还没有文章</li>
@@ -61,7 +61,7 @@
 
     <div class="right-content position-a right-0 top-0 bottom-0">
       <div class="title bd-ccc-b cl px-font-14 px-height-50">
-        <template v-if="savePath">
+        <template v-if="isAdmin && savePath">
           <div class="fr px-line-50 text-center px-margin-r10">
             <div class="btn px-btn btn-error line-normal cursor-p" @click="publish(1)">发布</div>
           </div>
@@ -82,6 +82,7 @@
 
         <input
           type="text"
+          :disabled="!isAdmin"
           :placeholder="savePath ? '请输入标题' : '从选择一个目录开始...'"
           v-model.trim="articalTitle"
           class="height-100 px-padding-lr10 px-font-16">
@@ -101,6 +102,10 @@
         </div>
       </div>
     </div>
+
+    <div class="position-a text-center left-0 w200 bottom-0 bd-ccc-r px-height-50 overflow-h">
+      <a v-if="isAdmin" href="javascript:" @click="logOut" class="display-b bd-ccc-t px-line-50">退出登录</a>
+    </div>
   </div>
 </template>
 
@@ -115,9 +120,6 @@
         // 文章标题
         articalTitle: '',
 
-        frameUrl: location.port === 8080
-          ? '//localhost:8080/dist/my-editor/index.html'
-          : './my-editor/index.html',
         editorInstance: false,
 
         // 目录展开
@@ -147,6 +149,18 @@
       }
     },
 
+    computed: {
+      isAdmin() {
+        return this.$route.name === 'Editor'
+      },
+
+      frameUrl() {
+        return (Number(location.port) === 8080
+          ? '//localhost:8080/dist/my-editor/index.html'
+          : './my-editor/index.html') + (this.isAdmin ? '' : '?preview=1')
+      }
+    },
+
     mounted() {
       DB.getList('Folder').then(res => {
         this.path = this.getAttribute(res)
@@ -164,6 +178,8 @@
       },
 
       publish(status) {
+        this.checkPriv()
+
         if (!this.editorInstance) {
           alert('editor未初始化')
           return
@@ -238,6 +254,10 @@
       },
 
       selectPath(item) {
+        if (!this.isAdmin) {
+          return
+        }
+
         if (!this.isEditFolder) {
           this.setArticalFill(item)
           this.saveArtical = null
@@ -282,6 +302,8 @@
       },
 
       addFolder() {
+        this.checkPriv()
+
         if (!this.isEditFolder) {
           this.isAddFolder = true
         } else {
@@ -290,6 +312,8 @@
       },
 
       editCurrFolder() {
+        this.checkPriv()
+
         if (!this.isAddFolder) {
           this.isEditFolder = true
           this.newFolderName = this.savePath.name
@@ -299,6 +323,8 @@
       },
 
       delFolder() {
+        this.checkPriv()
+
         let index = this.path.findIndex(x => x.id === this.savePath.id)
 
         if (this.showLeftMenu[index] === undefined) {
@@ -321,6 +347,8 @@
       },
 
       delArtical(arti, pathIndex) {
+        this.checkPriv()
+
         DB.updateArtical({ ...arti, status: -1 }).then(res=> {
           if (res.id) {
             let index = this.path[pathIndex].artical.findIndex(x => x.id === arti.id)
@@ -330,6 +358,26 @@
             alert('删除成功')
           }
         })
+      },
+
+      logOut() {
+        DB.logOut().then(res=> {
+          if (res) {
+            this.$router.push('/login')
+          } else {
+            alert(res.error)
+          }
+        })
+      },
+
+      // genderDisableMask(len = 50) {
+      //   return Array.from(new Array(len)).fill('<span class="line-mask"></span>').join('')
+      // },
+
+      checkPriv() {
+        if (!this.isAdmin) {
+          this.$router.replace('/editor')
+        }
       }
     }
   }
@@ -348,9 +396,6 @@
   .color-green {
     color: #00B996;
   }
-  .w200 {
-    width: 200px;
-  }
   .hover-bg {
     &:hover {
       background-color: #f2f2f2;
@@ -358,7 +403,6 @@
   }
 
   .left-menu {
-    width: 200px;
 
     li {
       cursor: pointer;
