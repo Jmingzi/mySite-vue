@@ -2,10 +2,20 @@
   <div class="wrap">
     <div class="w200 left-menu position-a left-0 top-0 px-bottom-50 bd-ccc-r">
       <ul class="menu-top">
-        <li class="position-r px-font-16 px-line-50 px-height-50 bd-ccc-b color-folder">
-          <div class="width-100 height-100 hover-bg text-center" @click.stop="addFolder">
+        <li class="position-r px-font-16 px-line-50 px-height-50 bd-ccc-b">
+          <div
+            v-if="isAdmin"
+            class="width-100 height-100 hover-bg text-center color-folder"
+            @click.stop="addFolder">
             <i class="iconfont icon-add"></i>
             <span>新建目录</span>
+          </div>
+          <div
+            @click="$router.push('/editor')"
+            class="width-100 height-100 hover-bg text-center color-info"
+            v-else>
+            <i class="iconfont icon-shenpi_faqishenpi"></i>
+            <span>写作模式</span>
           </div>
         </li>
 
@@ -83,7 +93,7 @@
         <input
           type="text"
           :disabled="!isAdmin"
-          :placeholder="savePath ? '请输入标题' : '从选择一个目录开始...'"
+          :placeholder="isAdmin ? savePath ? '请输入标题' : '从选择一个目录开始' : '过往不恋、当下不杂、未来不迎' + '...'"
           v-model.trim="articalTitle"
           class="height-100 px-padding-lr10 px-font-16">
       </div>
@@ -104,7 +114,8 @@
     </div>
 
     <div class="position-a text-center left-0 w200 bottom-0 bd-ccc-r px-height-50 overflow-h">
-      <a v-if="isAdmin" href="javascript:" @click="logOut" class="display-b bd-ccc-t px-line-50">退出登录</a>
+      <a v-if="isAdmin" href="javascript:" @click="logOut" class="display-b bd-ccc-t px-line-50 width-50 fl">退出登录</a>
+      <a v-if="isAdmin" href="javascript:" @click="$router.replace('/')" class="display-b bd-ccc-t px-line-50 width-50 fl">阅读模式</a>
     </div>
   </div>
 </template>
@@ -420,11 +431,18 @@
     }
 
     .menu-top {
+      &>li:not(:first-child) {
+        border-bottom: 1px #cdcdcd dashed;
+      }
+
       ul {
         font-size: 14px;
         line-height: 30px;
         color: #666;
-        margin-bottom: 10px;
+        // 盖住边线
+        margin-top: -1px;
+        background-color: #fff;
+        border-bottom: 1px #cdcdcd dashed;
 
         li:first-child:before {
           height: 15px;

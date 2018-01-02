@@ -4,7 +4,8 @@
     <input type="password" v-model.trim="pwd" @keyup.13="login">
 
     <div class="text-center">
-      <a href="javascript:" class="btn px-btn btn-info" @click="login">登录</a>
+      <a href="javascript:" class="btn px-btn btn-info px-margin-b10" @click="login">登录</a><br>
+      <a href="#/">阅读模式</a>
     </div>
   </div>
 </template>
