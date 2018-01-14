@@ -1,5 +1,5 @@
 <template>
-  <div class="w200 login-wrap bd-ccc px-padding-20">
+  <div class="w200 login-wrap bd-ccc px-padding-20" v-loading="loading">
     <input type="text" v-model.trim="name" @keyup.13="login">
     <input type="password" v-model.trim="pwd" @keyup.13="login">
 
@@ -12,25 +12,31 @@
 
 <script>
   import DB from '../assets/db'
+  import utils from '../assets/utils'
 
   export default {
     data() {
       return {
         name: '',
-        pwd: ''
+        pwd: '',
+        loading: false
       }
     },
+
     methods: {
       login() {
         if (!this.name || !this.pwd) {
-          alert('请输入信息')
+          utils.alert.call(this, '请输入信息')
           return
         }
 
+        this.loading = true
         DB.login(this.name, this.pwd).then(res=> {
+          this.loading = false
           if (res.code) {
-            alert(res.error)
+            utils.alert.call(this, res.error)
           } else {
+            utils.alert.call(this, '登录成功', 'success')
             this.$router.push('/editor')
           }
         }).then(res=> {

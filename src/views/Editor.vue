@@ -1,5 +1,8 @@
 <template>
-  <div class="wrap">
+  <div
+    v-loading="loading"
+    element-loading-background="rgba(0, 0, 0, 0.3)"
+    class="wrap height-100">
     <div class="w200 left-menu position-a left-0 top-0 px-bottom-50 bd-ccc-r">
       <ul class="menu-top">
         <li class="position-r px-font-16 px-line-50 px-height-50 bd-ccc-b">
@@ -38,8 +41,8 @@
               <i class="iconfont icon-queding fr color-c999 px-margin-t5" @click.stop="confirmAddFolder"></i>
               <i class="iconfont icon-guanbi fr color-c999 px-margin-5" @click.stop="cancelAddFolder"></i>
             </template>
-            <i v-else @click.stop="toggle(index, item)"
-              :class="`iconfont px-font-10 px-margin-t5 color-ccc fr ${showLeftMenu[index] ? 'icon-jiantou' : 'icon-Triangle'}`"></i>
+            <i v-else @click.stop="toggle(item)"
+              :class="`iconfont px-font-10 px-margin-t5 color-ccc fr ${showLeftMenu[item.id] ? 'icon-jiantou' : 'icon-Triangle'}`"></i>
             <i class="iconfont icon-CombinedShape1 color-folder"></i>
 
             <input
@@ -51,7 +54,7 @@
             <span v-else>{{ item.name }}</span>
           </li>
 
-          <ul v-show="showLeftMenu[index]">
+          <ul v-show="showLeftMenu[item.id]">
             <template v-if="item.artical">
               <li
                 class="hover-bg"
@@ -106,7 +109,7 @@
           width="100%"
           ref="frame">
         </iframe>
-        <div class="text-center px-padding-t100" v-else>
+        <div class="text-center px-padding-t100" v-show="!savePath">
           <p class="px-font-32 px-padding-t100">Hey, boy !</p>
           <span class="color-c666">世界在你手上...</span>
         </div>
@@ -122,19 +125,20 @@
 
 <script>
   import DB from '../assets/db'
+  import utils from '../assets/utils'
+  let alert
 
   export default {
     name: 'editor',
 
     data() {
       return {
+        loading: false,
         // 文章标题
         articalTitle: '',
 
-        editorInstance: false,
-
         // 目录展开
-        showLeftMenu: [],
+        showLeftMenu: {},
 
         // 目录列表
         path: [],
@@ -152,12 +156,7 @@
     },
 
     created() {
-      if (!window.editorLoadCallback) {
-        window.editorLoadCallback = (editorIns) => {
-          console.log('editor load callback')
-          this.editorInstance = editorIns
-        }
-      }
+      alert = utils.alert.bind(this)
     },
 
     computed: {
@@ -173,12 +172,18 @@
     },
 
     mounted() {
+      this.loading = true
       DB.getList('Folder').then(res => {
+        this.loading = false
         this.path = this.getAttribute(res)
       })
     },
 
     methods: {
+      editorInstance() {
+        return this.$refs.frame ? this.$refs.frame.contentWindow.Editor : null
+      },
+
       getAttribute(res) {
         return res.map(item => {
           return {
@@ -191,8 +196,9 @@
       publish(status) {
         this.checkPriv()
 
-        if (!this.editorInstance) {
-          alert('editor未初始化')
+        let instance = this.editorInstance()
+        if (!instance) {
+          this.$msgbox('editor未初始化')
           return
         }
 
@@ -200,10 +206,15 @@
           status,
           artical_title: this.articalTitle,
           artical_thumb: '',
-          artical_content: this.editorInstance.getHTML(),
-          artical_markdown: this.editorInstance.getMarkdown(),
+          artical_content: instance.getHTML(),
+          artical_markdown: instance.getMarkdown(),
           // artical 置空，否则循环引用
           artical_folder: { ...this.savePath, artical: [] }
+        }
+
+        if (!data.artical_title) {
+          alert('请填写标题')
+          return
         }
 
         if (this.saveArtical) {
@@ -211,9 +222,11 @@
           data.id = this.saveArtical.id
         }
 
+        this.loading = true
         DB.updateArtical(data).then(res=> {
+          this.loading = false
           if (res.id) {
-            alert(`${data.id ? '编辑' : '新增'}成功`)
+            alert(`${data.id ? '编辑' : '新增'}成功`, 'success')
             let afterData = { id: res.id, ...data }
 
             if (data.id) {
@@ -226,8 +239,8 @@
                 this.$set(this.savePath, 'artical', [afterData])
 
                 // 展开
-                let index = this.path.findIndex(x => x.id === this.savePath.id)
-                this.toggle(index, this.savePath)
+                // let index = this.path.findIndex(x => x.id === this.savePath.id)
+                this.toggle(this.savePath)
               } else {
                 this.savePath.artical.unshift(afterData)
               }
@@ -237,31 +250,32 @@
       },
 
       setArticalFill(path, arti = {}) {
-        // 异步初始化editor之前
-        if (!this.editorInstance) {
-          console.log('editor has no instance')
-          localStorage.setItem('editFillContent', arti.artical_markdown || '')
-        } else {
-          console.log('editor instance is exist')
-          // this.editorInstance.setMarkdown(arti.artical_markdown || '')
-          // this.$refs.frame.contentWindow.Editor.setMarkdown(arti.artical_markdown || '')
-          this.$refs.frame.contentWindow.Editor.setValue(arti.artical_markdown || '')
-        }
-
         this.savePath = path
         this.saveArtical = arti
         this.articalTitle = arti.artical_title || ''
+        this.$nextTick(()=> {
+          let instance = this.editorInstance()
+          if (instance) {
+            console.log('editor instance is exist')
+            instance.setValue(arti.artical_markdown || '')
+          } else {
+            console.log('editor has no instance')
+            localStorage.setItem('editFillContent', arti.artical_markdown || '')
+          }
+        })
       },
 
-      toggle(index, item) {
-        if (!this.showLeftMenu[index] && !item.artical) {
+      toggle(item) {
+        if (!this.showLeftMenu[item.id] && !item.artical) {
           // get list
+          this.loading = true
           DB.getList('Artical', { 'artical_folder.id': item.id }).then(res=> {
+            this.loading = false
             this.$set(item, 'artical', this.getAttribute(res))
           })
         }
 
-        this.$set(this.showLeftMenu, index, !this.showLeftMenu[index])
+        this.$set(this.showLeftMenu, item.id, !this.showLeftMenu[item.id])
       },
 
       selectPath(item) {
@@ -293,15 +307,13 @@
         DB.updateFolder(data).then(res => {
           console.log(res.id)
           if (res.id) {
+            alert(`${this.isEditFolder ? '编辑' : '新建'}目录成功`, 'success')
             if (this.isEditFolder) {
-              // let index = this.path.findIndex(item=> item.id === this.savePath.id)
-              // this.$set(this.path, index, { ...this.path[index], name: data.name })
               this.savePath.name = data.name
             } else {
               this.path.unshift({ ...data, id: res.id })
             }
             this.cancelAddFolder()
-            alert('操作成功')
           }
         })
       },
@@ -309,6 +321,7 @@
       cancelAddFolder() {
         this.isAddFolder = false
         this.isEditFolder = false
+        this.savePath = null
         this.newFolderName = '新建目录'
       },
 
@@ -318,7 +331,7 @@
         if (!this.isEditFolder) {
           this.isAddFolder = true
         } else {
-          alert('请先编辑完成')
+          alert('请先编辑完成', 'info')
         }
       },
 
@@ -329,7 +342,7 @@
           this.isEditFolder = true
           this.newFolderName = this.savePath.name
         } else {
-          alert('请先新建完成')
+          alert('请先新建完成', 'info')
         }
       },
 
@@ -338,21 +351,25 @@
 
         let index = this.path.findIndex(x => x.id === this.savePath.id)
 
-        if (this.showLeftMenu[index] === undefined) {
-          alert('请先查看该目录下是否存在文章')
+        if (this.showLeftMenu[this.path[index].id] === undefined) {
+          alert('请先查看该目录下是否存在文章', 'info')
           return
         }
 
         if (this.savePath.artical && this.savePath.artical.length > 0) {
-          alert('请先删除该目录下的文章')
+          alert('请先删除该目录下的文章', 'info')
           return
         }
 
         // this.savePath.id
+        this.loading = true
         DB.updateFolder({ ...this.savePath, del: true }).then(res=> {
+          this.loading = false
           if (res.id) {
+            this.showLeftMenu[this.path[index].id] = false
             this.path.splice(index, 1)
-            this.showLeftMenu[index] = false
+            this.savePath = null
+            alert('删除目录成功', 'success')
           }
         })
       },
@@ -360,13 +377,15 @@
       delArtical(arti, pathIndex) {
         this.checkPriv()
 
+        this.loading = true
         DB.updateArtical({ ...arti, status: -1 }).then(res=> {
+          this.loading = false
           if (res.id) {
             let index = this.path[pathIndex].artical.findIndex(x => x.id === arti.id)
             this.path[pathIndex].artical.splice(index, 1)
 
             this.$set(this.path, pathIndex, this.path[pathIndex])
-            alert('删除成功')
+            alert('删除成功', 'success')
           }
         })
       },

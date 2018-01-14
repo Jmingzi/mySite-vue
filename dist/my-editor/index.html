@@ -22,7 +22,7 @@
   <script>
     var local = localStorage.getItem('editFillContent')
     var isRead = /preview/.test(location.search)
-
+    console.log('load editor => index.html')
     // 上传图片用
     var appId = 'UjPTkcNRB9HL7458RuG6f8xk-gzGzoHsz'
     var appKey = 'ylcamdRnbp8FyA7CoDAL5BSz'
@@ -68,18 +68,16 @@
           imageFormats : ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
           imageUploadURL : "./php/upload.php",
           placeholder: '世界在你手上...开始吧',
-          onload : function() {
+          onload: function() {
             console.log('editor load before callback')
-            window.parent.editorLoadCallback(this)
+            window.parent.editorLoadCallback && window.parent.editorLoadCallback(this)
             //this.fullscreen();
             //this.unwatch();
             //this.watch().fullscreen();
-
             // this.fullscreen()
             if (isRead) {
               this.previewing()
             }
-
             //this.setMarkdown("#PHP");
             //this.width("100%");
             //this.height(480);

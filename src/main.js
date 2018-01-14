@@ -3,6 +3,18 @@
 import Vue from 'vue'
 import App from './App'
 import router from './router'
+import MessageBox from 'element-ui/lib/message-box'
+import Message from 'element-ui/lib/message'
+import Loading from 'element-ui/lib/loading'
+import 'element-ui/lib/theme-chalk/message-box.css'
+import 'element-ui/lib/theme-chalk/message.css'
+import 'element-ui/lib/theme-chalk/loading.css'
+// Vue.use(MessageBox)
+// Vue.use(Message)
+Vue.use(Loading.directive)
+Vue.prototype.$message = Message
+Vue.prototype.$msgbox = MessageBox
+Vue.prototype.$loading = Loading.service
 
 Vue.config.productionTip = false
 
@@ -14,6 +26,7 @@ AV.init({ appId, appKey })
 new Vue({
   el: '#app',
   router,
-  template: '<App/>',
-  components: { App }
+  // template: '<App/>',
+  // components: { App }
+  render:  h => h(App)
 })
