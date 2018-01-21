@@ -6,15 +6,18 @@ import router from './router'
 import MessageBox from 'element-ui/lib/message-box'
 import Message from 'element-ui/lib/message'
 import Loading from 'element-ui/lib/loading'
+import Notify from 'element-ui/lib/notification'
 import 'element-ui/lib/theme-chalk/message-box.css'
 import 'element-ui/lib/theme-chalk/message.css'
 import 'element-ui/lib/theme-chalk/loading.css'
-// Vue.use(MessageBox)
-// Vue.use(Message)
+import 'element-ui/lib/theme-chalk/notification.css'
+import 'element-ui/lib/theme-chalk/icon.css'
+
 Vue.use(Loading.directive)
 Vue.prototype.$message = Message
 Vue.prototype.$msgbox = MessageBox
 Vue.prototype.$loading = Loading.service
+Vue.prototype.$notify = Notify
 
 Vue.config.productionTip = false
 

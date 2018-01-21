@@ -1,11 +1,13 @@
 <template>
-  <div class="w200 login-wrap bd-ccc px-padding-20" v-loading="loading">
-    <input type="text" v-model.trim="name" @keyup.13="login">
-    <input type="password" v-model.trim="pwd" @keyup.13="login">
+  <div class="login-wrap">
+    <div class="w200 margin-auto bd-ccc px-padding-20" v-loading="loading">
+      <input type="text" v-model.trim="name" @keyup.13="login">
+      <input type="password" v-model.trim="pwd" @keyup.13="login">
 
-    <div class="text-center">
-      <a href="javascript:" class="btn px-btn btn-info px-margin-b10" @click="login">登录</a><br>
-      <a href="#/">阅读模式</a>
+      <div class="text-center">
+        <a href="javascript:" class="btn px-btn btn-info px-margin-b10 px-font-14" @click="login">登录</a><br>
+        <a href="#/" class="px-font-14">返回首页</a>
+      </div>
     </div>
   </div>
 </template>
@@ -37,7 +39,8 @@
             utils.alert.call(this, res.error)
           } else {
             utils.alert.call(this, '登录成功', 'success')
-            this.$router.push('/editor')
+            // this.$router.push('/editor')
+            history.back()
           }
         }).then(res=> {
           console.log(res)
@@ -49,7 +52,7 @@
 
 <style lang="scss" scoped>
   .login-wrap {
-    margin: 200px auto;
+    padding-top: 200px;
   }
   input {
     width: 150px;

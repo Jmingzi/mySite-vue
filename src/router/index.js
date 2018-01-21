@@ -1,7 +1,10 @@
 import Vue from 'vue'
 import Router from 'vue-router'
+import Index from '../views/Index.vue'
 import Editor from '../views/Editor.vue'
 import Login from '../views/Login.vue'
+import AddPlane from '../views/AddPlane.vue'
+import PlaneList from '../views/PlaneList.vue'
 import DB from '../assets/db'
 
 Vue.use(Router)
@@ -11,7 +14,7 @@ const route = new Router({
     {
       path: '/',
       name: 'Index',
-      component: Editor
+      component: Index
     },
     {
       path: '/editor',
@@ -25,6 +28,19 @@ const route = new Router({
       path: '/login',
       name: 'Login',
       component: Login
+    },
+    {
+      path: '/add-plane',
+      name: 'AddPlane',
+      component: AddPlane,
+      meta: {
+        auth: true
+      }
+    },
+    {
+      path: '/plane-list',
+      name: 'PlaneList',
+      component: PlaneList
     }
   ]
 })

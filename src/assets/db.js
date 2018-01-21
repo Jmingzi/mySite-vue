@@ -1,6 +1,7 @@
 export default {
   Folder: AV.Object.extend('Folder'),
   Artical: AV.Object.extend('Artical'),
+  Plane: AV.Object.extend('Plane'),
 
   updateFolder(data) {
     let folder
@@ -42,17 +43,35 @@ export default {
     }
   },
 
-  getList(table, condition) {
+  getList(table, condition, isFirst) {
     let ins = new AV.Query(table)
-
     if (condition) {
       Object.keys(condition).forEach(key => {
         ins.equalTo(key, condition[key])
       })
     }
     ins.descending('createdAt')
+    return isFirst ? ins.first() : ins.find()
+  },
 
-    return ins.find()
+  updatePlane(data) {
+    let plane
+    if (data.id) {
+      plane = AV.Object.createWithoutData('Plane', data.id)
+    } else {
+      plane = new this.Plane()
+    }
+
+    if (data.del) {
+      return plane.destroy()
+    } else {
+      Object.keys(data).forEach(key => {
+        if (key !== 'id') {
+          plane.set(key, data[key])
+        }
+      })
+      return plane.save()
+    }
   },
 
   // 手动注册用户 后门
