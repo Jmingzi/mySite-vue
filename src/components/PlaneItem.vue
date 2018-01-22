@@ -15,7 +15,7 @@
 
       <div class="plane-item" v-for="(item, i) in planeList">
         <div class="px-margin-tb10 px-font-16 font-bold">
-          <div class="fr px-font-12 px-margin-t5">
+          <div class="fr px-font-12 px-margin-t5" v-if="isAdmin">
             <a
               href="javascript:"
               v-if="item.lastProgress < 100"
@@ -56,7 +56,7 @@
   export default {
     name: "plane-item",
 
-    props: ['planeList'],
+    props: ['planeList', 'isAdmin'],
 
     filters: {
       format(date) {

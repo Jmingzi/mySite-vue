@@ -4,6 +4,7 @@
     element-loading-background="rgba(0, 0, 0, 0.3)"
     class="plane-list w650 margin-auto bd-gray-lighter">
     <plane-item
+      :isAdmin="isAdmin"
       :planeList="planeList">
     </plane-item>
   </div>
@@ -21,6 +22,7 @@
     data() {
       return {
         loading: false,
+        isAdmin: DB.currentUser(),
         planeList: []
       }
     },

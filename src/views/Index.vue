@@ -13,6 +13,7 @@
     <div class="plan-article w650 margin-auto panel px-font-14 text-left bd-gray-lighter radius-3">
       <plane-item
         @updateList="getPlane"
+        :isAdmin="isAdmin"
         :planeList="planeList">
       </plane-item>
 
