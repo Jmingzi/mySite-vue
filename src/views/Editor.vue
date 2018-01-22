@@ -96,7 +96,7 @@
         <input
           type="text"
           :disabled="!isAdmin"
-          :placeholder="isAdmin ? savePath ? '请输入标题' : '从选择一个目录开始' : '过往不恋、当下不杂、未来不迎' + '...'"
+          :placeholder="isAdmin ? savePath ? '请输入标题' : '从选择一个目录开始' : 'Jmingzi的笔记系统' + '...'"
           v-model.trim="articalTitle"
           class="height-100 px-padding-lr10 px-font-16">
       </div>
@@ -118,7 +118,7 @@
 
     <div class="position-a text-center left-0 w200 bottom-0 bd-ccc-r px-height-50 overflow-h">
       <a v-if="isAdmin" href="javascript:" @click="logOut" class="display-b bd-ccc-t px-line-50 width-50 fl">退出登录</a>
-      <a v-if="isAdmin" href="javascript:" @click="$router.replace('/')" class="display-b bd-ccc-t px-line-50 width-50 fl">阅读模式</a>
+      <a v-if="isAdmin" href="#/read" class="display-b bd-ccc-t px-line-50 width-50 fl">阅读模式</a>
     </div>
   </div>
 </template>
@@ -136,10 +136,8 @@
         loading: false,
         // 文章标题
         articalTitle: '',
-
         // 目录展开
         showLeftMenu: {},
-
         // 目录列表
         path: [],
 
@@ -149,7 +147,6 @@
 
         // 选中的目录
         savePath: null,
-
         // 选中的文章
         saveArtical: null
       }
@@ -168,14 +165,33 @@
         return (Number(location.port) === 8080
           ? '//localhost:8080/dist/my-editor/index.html'
           : './my-editor/index.html') + (this.isAdmin ? '' : '?preview=1')
+      },
+
+      articleId() {
+        return this.$route.query.id
       }
     },
 
     mounted() {
       this.loading = true
       DB.getList('Folder').then(res => {
-        this.loading = false
         this.path = this.getAttribute(res)
+
+        // 展开这篇文章的目录与详情
+        if (this.articleId) {
+          DB.queryDetail('Artical', this.articleId).then(res=> {
+            this.savePath = {
+              id: res.attributes.artical_folder.id,
+              name: res.attributes.artical_folder.name
+            }
+            this.$nextTick(()=> {
+              this.toggle(this.savePath)
+              this.loading = false
+            })
+          })
+        } else {
+          this.loading = false
+        }
       })
     },
 
@@ -271,10 +287,22 @@
           this.loading = true
           DB.getList('Artical', { 'artical_folder.id': item.id }).then(res=> {
             this.loading = false
-            this.$set(item, 'artical', this.getAttribute(res))
+            if (res && res.length > 0) {
+              item = this.path.find(x=> x.id === item.id)
+              this.$set(item, 'artical', this.getAttribute(res))
+
+              if (this.articleId) {
+                let readArticle = res.find(x=> x.id === this.articleId)
+                this.$nextTick(()=> {
+                  this.setArticalFill(item, {
+                    id: readArticle.id,
+                    ...readArticle.attributes
+                  })
+                })
+              }
+            }
           })
         }
-
         this.$set(this.showLeftMenu, item.id, !this.showLeftMenu[item.id])
       },
 

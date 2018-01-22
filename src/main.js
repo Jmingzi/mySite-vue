@@ -16,6 +16,7 @@ import 'element-ui/lib/theme-chalk/icon.css'
 Vue.use(Loading.directive)
 Vue.prototype.$message = Message
 Vue.prototype.$msgbox = MessageBox
+Vue.prototype.$confirm = MessageBox.confirm
 Vue.prototype.$loading = Loading.service
 Vue.prototype.$notify = Notify
 

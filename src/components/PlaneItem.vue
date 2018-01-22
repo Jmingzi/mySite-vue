@@ -1,5 +1,5 @@
 <template>
-  <div class="plane-item">
+  <div class="plane-item px-padding-b20">
     <div class="panel-title px-line-30 px-padding-lr10 px-font-12">
       <span
         v-if="!isList"
@@ -11,15 +11,19 @@
       <span><i class="el-icon-star-off"></i> 计划</span>
     </div>
     <div class="panel-content px-padding-lr10">
-      <div class="plane-item" v-for="item in planeList">
-        <p class="px-margin-tb10 px-font-16 font-bold">
+      <p v-if="planeList.length === 0" class="text-center px-padding-t20">暂无置顶计划!</p>
+
+      <div class="plane-item" v-for="(item, i) in planeList">
+        <div class="px-margin-tb10 px-font-16 font-bold">
+          <div class="fr px-font-12 px-margin-t5">
+            <a
+              href="javascript:"
+              v-if="item.lastProgress < 100"
+              @click="editPlane(item)">编辑进度</a>
+            <a href="javascript:" class="color-error" @click="delPlane(item, i)">删除</a>
+          </div>
           <span>{{item.name}}</span>
-          <a
-            href="javascript:"
-            v-if="item.lastProgress < 100"
-            @click="editPlane(item)"
-            class="px-font-12 fr px-margin-t5">编辑进度</a>
-        </p>
+        </div>
         <el-progress
           :percentage="item.lastProgress"
           :status="`${item.lastProgress === 100 ? 'success' : ''}`"
@@ -45,6 +49,7 @@
 
 <script>
   import utils from '../assets/utils'
+  import DB from '../assets/db'
   import ElProgress from 'element-ui/lib/progress'
   import 'element-ui/lib/theme-chalk/progress.css'
 
@@ -80,6 +85,24 @@
 
       toPlaneList() {
         this.$router.push('/plane-list')
+      },
+
+      delPlane(item, i) {
+        this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', { type: 'warning' }).then(() => {
+          DB.updatePlane({ id: item.id, del: true }).then(res=> {
+            if (res) {
+              this.$message({
+                type: 'success',
+                message: '删除成功!'
+              })
+              if (this.isList) {
+                this.planeList.splice(i, 1)
+              } else {
+                this.$emit('updateList')
+              }
+            }
+          })
+        })
       },
 
       toMessage(p) {

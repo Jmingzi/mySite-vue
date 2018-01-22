@@ -112,7 +112,7 @@
               progress: [form]
             }
 
-            if (this.form.progress <= this.editPlaneDetail.lastProgress) {
+            if (!this.isAdd && this.form.progress <= this.editPlaneDetail.lastProgress) {
               utils.alert.call(this, '进度值必须大于当前进度' + this.editPlaneDetail.lastProgress + '%')
               return
             }

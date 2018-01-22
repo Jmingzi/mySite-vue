@@ -51,7 +51,13 @@ export default {
       })
     }
     ins.descending('createdAt')
+    // ins.addAscending('top')
+    // ins.addDescending('createdAt')
     return isFirst ? ins.first() : ins.find()
+  },
+
+  queryDetail(table, id) {
+    return new AV.Query(table).get(id)
   },
 
   updatePlane(data) {

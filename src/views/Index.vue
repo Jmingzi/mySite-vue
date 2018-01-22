@@ -11,18 +11,20 @@
     </div>
 
     <div class="plan-article w650 margin-auto panel px-font-14 text-left bd-gray-lighter radius-3">
-      <plane-item :planeList="planeList">
+      <plane-item
+        @updateList="getPlane"
+        :planeList="planeList">
       </plane-item>
 
       <div class="font-bold px-font-16 bd-gray-lighter-t px-margin-t20">
         <div class="panel-title px-line-30 px-padding-lr10 px-font-12">
           <span><i class="el-icon-tickets"></i> 文章</span>
         </div>
-        <p class="px-padding-15 hover-bg cursor-p" v-for="item in articleList">
+        <p class="px-padding-15 hover-bg cursor-p" v-for="item in articleList" @click="toArticle(item)">
           <span class="fr px-font-14 color-c999">20{{item.time | format}}</span>
           <span>{{item.artical_title}}</span>
         </p>
-        <p class="px-padding-15 hover-bg cursor-p bd-gray-lighter-t text-center" @click="$router.push('/editor')">
+        <p class="px-padding-15 hover-bg cursor-p bd-gray-lighter-t text-center" @click="$router.push('/read')">
           <i class="el-icon-more-outline"></i>
         </p>
       </div>
@@ -34,7 +36,7 @@
         <a class="ib-middle" href="javascript:" @click="logOut"><i class="el-icon-refresh"></i> 退出登录</a>
       </template>
       <template v-else>
-        <a class="ib-middle px-margin-r20" href="#/editor"><i class="el-icon-edit-outline"></i> 阅读模式</a>
+        <a class="ib-middle px-margin-r20" href="#/read"><i class="el-icon-edit-outline"></i> 阅读模式</a>
         <a class="ib-middle" href="#/login"><i class="el-icon-mobile-phone"></i> 登录</a>
       </template>
     </p>
@@ -66,8 +68,8 @@
       ]).then(res=> {
         this.loading = false
         if (res.length > 0) {
-          this.planeList = utils.getAttribute(res[0])
-          this.articleList = utils.getAttribute(res[1])
+          this.planeList = res[0] ? utils.getAttribute(res[0]) : []
+          this.articleList = res[1] ? utils.getAttribute(res[1]) : []
         }
       })
     },
@@ -82,6 +84,16 @@
     },
 
     methods: {
+      getPlane() {
+        DB.getList('Plane', { top: true }, true).then(res=> {
+          this.planeList = res ? utils.getAttribute(res) : []
+        })
+      },
+
+      toArticle(item) {
+        this.$router.push(`/read?id=${item.id}`)
+      },
+
       logOut() {
         DB.logOut().then(()=> {
           utils.alert.call(this, '退出登陆成功', 'success')

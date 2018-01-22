@@ -17,6 +17,11 @@ const route = new Router({
       component: Index
     },
     {
+      path: '/read',
+      name: 'Read',
+      component: Editor
+    },
+    {
       path: '/editor',
       name: 'Editor',
       component: Editor,
